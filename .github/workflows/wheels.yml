@@ -2,7 +2,7 @@ name: Build
 
 # on:
 #   push:
-#     branches:    
+#     branches:
 #       - main
 #   pull_request:
 #   schedule:
@@ -36,15 +36,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-          
+          python-version: "3.10"
+
       - name: Check latest available grpcio release
         id: grpcio_version
         run: |
           GRPCIO_LATEST_VERSION=$(pip3 index versions --no-binary grpcio grpcio | grep grpcio | sed -E 's/grpcio \(([0-9.]+)\)/\1/')
           echo "Latest grpcio version on PyPI: $GRPCIO_LATEST_VERSION"
           echo "grpcio_current_version=$GRPCIO_LATEST_VERSION" >> $GITHUB_OUTPUT
-          
+
           GRPCIO_LATEST_RELEASE="${{ steps.get_release.outputs.release }}"
           if [[ $GRPCIO_LATEST_RELEASE == $GRPCIO_LATEST_VERSION ]]; then
             echo "We already have a release for $GRPCIO_LATEST_RELEASE. Skipping build."
@@ -53,27 +53,27 @@ jobs:
             echo "Latest release $GRPCIO_LATEST_RELEASE is outdated, starting build for $GRPCIO_LATEST_VERSION"
             echo "should_build=1" >> $GITHUB_OUTPUT
           fi
-  
+
   build_wheels:
     name: Build ${{ matrix.package }} wheels on ${{ matrix.os }}, for Python ${{ matrix.python_build_version }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "macOS-12" ]
-        python_build_version: [ "cp38", "cp39", "cp310", "cp311" ]
-        package: [ "grpcio", "grpcio-tools" ]
+        os: ["macOS-15"]
+        python_build_version: ["cp311", "cp312", "cp313"]
+        package: ["grpcio", "grpcio-tools"]
 
     needs: [check_release]
     if: needs.check_release.outputs.should_build == '1'
     steps:
       # Used to host cibuildwheel
       - uses: actions/setup-python@v3
-      
+
       - name: Download latest ${{ matrix.package }} stable tarball
         run: |
           pip download --no-binary ${{ matrix.package }} ${{ matrix.package }}==${{ needs.check_release.outputs.latest_version }}
           tar xf *.tar.gz
-          
+
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==2.9.0
 
@@ -89,10 +89,10 @@ jobs:
           CIBW_ENVIRONMENT_MACOS: "GRPC_PYTHON_BUILD_WITH_CYTHON=1"
           CIBW_BEFORE_BUILD: "pip install Cython; if [[ -f requirements.txt ]]; then pip install -r requirements.txt; fi"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
-          
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
